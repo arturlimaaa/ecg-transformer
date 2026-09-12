@@ -41,6 +41,12 @@ def test_cooccurring_diagnostic_statements_set_multiple_superclasses():
     assert list(vector) == [0.0, 1.0, 0.0, 0.0, 1.0]
 
 
+def test_diagnostic_code_with_likelihood_zero_still_counts():
+    stmt_map = diagnostic_statement_map(_stmt_table())
+    vector = superclass_vector({"IMI": 0.0}, stmt_map)
+    assert list(vector) == [0.0, 1.0, 0.0, 0.0, 0.0]
+
+
 def test_patient_confined_to_one_fold_is_zero_overlap():
     meta = pd.DataFrame(
         {
