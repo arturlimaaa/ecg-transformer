@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CNN on a fold-10 ECG</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #f6ebe6;
+    --grid: #e7c9c4;
+    --ink: #1b1412;
+    --faint: #8c736c;
+    --bar: #1b1412;
+    --rule: #e4d0cb;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--paper); color: var(--ink); }
+  body {
+    font-family: "Atkinson Hyperlegible", "Segoe UI", sans-serif;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    height: 100vh;
+    overflow: hidden;
+  }
+  header, footer {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 18px;
+    background: #fffaf8;
+    border-bottom: 1px solid var(--rule);
+  }
+  footer { border-bottom: 0; border-top: 1px solid var(--rule); flex-wrap: wrap; }
+  h1 { font-size: 1.05rem; font-weight: 700; margin: 0; }
+  .meta { color: var(--faint); font-size: 0.92rem; }
+  .stage {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 260px;
+    min-height: 0;
+  }
+  .scope { min-width: 0; min-height: 0; overflow: hidden; padding: 8px 8px 8px 12px; }
+  canvas { width: 100%; height: 100%; max-width: 100%; display: block; }
+  aside {
+    border-left: 1px solid var(--rule);
+    padding: 16px 16px 8px;
+    background: #fffaf8;
+    overflow: auto;
+  }
+  .meter { margin: 0 0 12px; }
+  .meter .name { display: flex; justify-content: space-between; gap: 8px; font-size: 0.92rem; }
+  .meter .name span:last-child { font-variant-numeric: tabular-nums; }
+  .meter .name.positive { font-weight: 700; }
+  .track { height: 10px; background: #f0ddd8; margin-top: 4px; }
+  .fill { height: 100%; width: 0; background: var(--bar); transition: width 0.45s linear; }
+  button {
+    font: inherit;
+    background: #fffaf8;
+    color: var(--ink);
+    border: 1px solid #c9b2ac;
+    padding: 8px 12px;
+    cursor: pointer;
+  }
+  button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  button[aria-pressed="true"] { background: var(--ink); color: #fffaf8; }
+  @media (max-width: 800px) {
+    .stage { grid-template-columns: 1fr; grid-template-rows: 58vh auto; }
+    aside { border-left: 0; border-top: 1px solid var(--rule); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .fill { transition: none; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Fold 10, one record at a time</h1>
+  <div class="meta" id="who">Loading the saved CNN…</div>
+</header>
+<div class="stage">
+  <div class="scope"><canvas id="scope"></canvas></div>
+  <aside id="meters"></aside>
+</div>
+<footer>
+  <button type="button" id="prev">Previous</button>
+  <button type="button" id="next">Next</button>
+  <button type="button" id="play" aria-pressed="false">Play</button>
+  <button type="button" class="mask" data-condition="clean" aria-pressed="true">All 12 leads</button>
+  <button type="button" class="mask" data-condition="precordial_v1_v3" aria-pressed="false">V1–V3 off</button>
+  <button type="button" class="mask" data-condition="i_ii_only" aria-pressed="false">I and II only</button>
+  <span class="meta">Arrow keys move through the test fold.</span>
+</footer>
+<script>
+const LEADS = ["I", "II", "III", "aVR", "aVL", "aVF", "V1", "V2", "V3", "V4", "V5", "V6"];
+const CLASSES = ["NORM", "MI", "STTC", "CD", "HYP"];
+const canvas = document.getElementById("scope");
+const ctx = canvas.getContext("2d");
+let index = 0;
+let condition = "clean";
+let playing = false;
+let timer = 0;
+let ticket = 0;
+let frame = 0;
+let current = null;
+let progress = 1;
+
+function resize() {
+  const rect = canvas.parentElement.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+  canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  draw();
+}
+window.addEventListener("resize", resize);
+
+function draw() {
+  const rect = canvas.parentElement.getBoundingClientRect();
+  const w = rect.width;
+  const h = rect.height;
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = "#f6ebe6";
+  ctx.fillRect(0, 0, w, h);
+    const left = 52;
+  const rowH = h / LEADS.length;
+  ctx.strokeStyle = "#e7c9c4";
+  ctx.lineWidth = 1;
+  for (let s = 0; s <= 10; s++) {
+    const x = left + ((w - left - 8) * s) / 10;
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, h);
+    ctx.stroke();
+  }
+  if (!current) return;
+  const shown = Math.max(2, Math.floor(progress * 1000));
+  current.signal.forEach((lead, row) => {
+    const mid = (row + 0.5) * rowH;
+    ctx.strokeStyle = "#f0d2cc";
+    ctx.beginPath();
+    ctx.moveTo(left, mid);
+    ctx.lineTo(w - 8, mid);
+    ctx.stroke();
+    ctx.fillStyle = "#1b1412";
+    ctx.font = "13px Atkinson Hyperlegible, sans-serif";
+    ctx.textBaseline = "middle";
+    ctx.fillText(LEADS[row], 8, mid);
+    ctx.beginPath();
+    ctx.strokeStyle = "#1b1412";
+    ctx.lineWidth = 1.25;
+    for (let t = 0; t < shown; t++) {
+      const x = left + ((w - left - 8) * t) / 999;
+      const y = mid - lead[t] * rowH * 0.1;
+      if (t === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  });
+}
+
+function animateDraw() {
+  cancelAnimationFrame(frame);
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduce) {
+    progress = 1;
+    draw();
+    return;
+  }
+  progress = 0;
+  const started = performance.now();
+  const step = (now) => {
+    progress = Math.min(1, (now - started) / 1100);
+    draw();
+    if (progress < 1) frame = requestAnimationFrame(step);
+  };
+  frame = requestAnimationFrame(step);
+}
+
+function renderMeters(data) {
+  const root = document.getElementById("meters");
+  root.replaceChildren();
+  for (const name of CLASSES) {
+    const block = document.createElement("div");
+    block.className = "meter";
+    const label = document.createElement("div");
+    label.className = "name" + (data.label[name] === 1 ? " positive" : "");
+    const title = document.createElement("span");
+    title.textContent = data.label[name] === 1 ? name + "  ·  labeled" : name;
+    const value = document.createElement("span");
+    value.textContent = data.probabilities[name].toFixed(2);
+    label.append(title, value);
+    const track = document.createElement("div");
+    track.className = "track";
+    const fill = document.createElement("div");
+    fill.className = "fill";
+    track.append(fill);
+    block.append(label, track);
+    root.append(block);
+    requestAnimationFrame(() => {
+      fill.style.width = (data.probabilities[name] * 100) + "%";
+    });
+  }
+}
+
+async function load() {
+  const my = ++ticket;
+  document.getElementById("who").textContent = "Scoring…";
+  const response = await fetch(`/api/record?i=${index}&condition=${condition}`);
+  const data = await response.json();
+  if (my !== ticket) return;
+  current = data;
+  index = data.index;
+  document.getElementById("who").textContent =
+    `ecg ${data.ecg_id} · ${data.index + 1} of ${data.n} · CNN ${data.elapsed_ms} ms`;
+  renderMeters(data);
+  animateDraw();
+}
+
+function setCondition(next) {
+  condition = next;
+  for (const button of document.querySelectorAll(".mask")) {
+    button.setAttribute("aria-pressed", String(button.dataset.condition === next));
+  }
+  load();
+}
+
+document.getElementById("prev").addEventListener("click", () => { index -= 1; load(); });
+document.getElementById("next").addEventListener("click", () => { index += 1; load(); });
+document.getElementById("play").addEventListener("click", () => {
+  playing = !playing;
+  document.getElementById("play").setAttribute("aria-pressed", String(playing));
+  document.getElementById("play").textContent = playing ? "Pause" : "Play";
+  clearInterval(timer);
+  if (playing) timer = setInterval(() => { index += 1; load(); }, 2800);
+});
+for (const button of document.querySelectorAll(".mask")) {
+  button.addEventListener("click", () => setCondition(button.dataset.condition));
+}
+document.addEventListener("keydown", (event) => {
+  if (event.key === "ArrowRight") { index += 1; load(); }
+  if (event.key === "ArrowLeft") { index -= 1; load(); }
+});
+resize();
+load();
+</script>
+</body>
+</html>
