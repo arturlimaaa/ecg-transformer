@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PTB-XL missing-lead comparison</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #e3f0e8;
+    --grid: #c9dfd3;
+    --sheet: #f7faf8;
+    --ink: #14211c;
+    --muted: #3e5249;
+    --cnn: #0e6b4f;
+    --tf: #245c78;
+    --chance: #b4332a;
+    --rule: #d5e0da;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--paper); }
+  body {
+    margin: 0;
+    color: var(--ink);
+    font-family: "Source Serif 4", Georgia, serif;
+    font-size: 1.125rem;
+    line-height: 1.55;
+    background-color: var(--paper);
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 16px 16px;
+  }
+  .sheet {
+    max-width: 920px;
+    margin: 28px auto 48px;
+    padding: 42px 48px 64px;
+    background: var(--sheet);
+  }
+  h1, h2, h3, .nums, figcaption strong, th, td, .bar-val, .legend, .arch, .status {
+    font-family: "Atkinson Hyperlegible", "Segoe UI", sans-serif;
+  }
+  h1 {
+    margin: 0 0 8px;
+    font-size: 2rem;
+    line-height: 1.15;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    max-width: 18ch;
+  }
+  .byline {
+    margin: 0 0 28px;
+    color: var(--muted);
+    font-family: "Atkinson Hyperlegible", sans-serif;
+    font-size: 0.95rem;
+  }
+  h2 {
+    margin: 2.4rem 0 0.6rem;
+    font-size: 1.35rem;
+    line-height: 1.25;
+  }
+  h3 {
+    margin: 1.4rem 0 0.4rem;
+    font-size: 1.05rem;
+  }
+  p, li { max-width: 62ch; }
+  p { margin: 0.7rem 0; }
+  a { color: var(--cnn); }
+  figure { margin: 1.2rem 0 1.6rem; }
+  figcaption {
+    margin-top: 0.45rem;
+    max-width: 68ch;
+    color: var(--muted);
+    font-size: 0.92rem;
+    line-height: 1.4;
+  }
+  img { width: 100%; height: auto; background: white; }
+  .pair {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .plot {
+    position: relative;
+    height: 300px;
+    margin-top: 8px;
+    border-left: 1px solid var(--ink);
+    border-bottom: 1px solid var(--ink);
+    background:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 20px 20px;
+    background-color: #f3faf6;
+  }
+  .chance {
+    position: absolute;
+    left: 0; right: 0;
+    bottom: 50%;
+    border-top: 1.5px dashed var(--chance);
+  }
+  .chance span {
+    position: absolute;
+    left: 6px;
+    top: -18px;
+    color: var(--chance);
+    font-family: "Atkinson Hyperlegible", sans-serif;
+    font-size: 0.78rem;
+  }
+  .groups {
+    position: absolute;
+    inset: 0 8px 0 8px;
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-end;
+  }
+  .group { display: flex; gap: 8px; align-items: flex-end; height: 100%; }
+  .bar {
+    width: 36px;
+    position: relative;
+  }
+  .bar.cnn { background: var(--cnn); }
+  .bar.tf { background: var(--tf); }
+  .bar-val {
+    position: absolute;
+    top: -1.15rem;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.72rem;
+    white-space: nowrap;
+  }
+  .xlabels {
+    display: flex;
+    justify-content: space-around;
+    margin: 6px 8px 0;
+    font-family: "Atkinson Hyperlegible", sans-serif;
+    font-size: 0.85rem;
+  }
+  .legend { display: flex; gap: 18px; margin: 10px 0 0; font-size: 0.9rem; }
+  .swatch { display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: -1px; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+    margin: 0.6rem 0 1rem;
+  }
+  th, td { padding: 6px 8px; text-align: right; border-bottom: 1px solid var(--rule); }
+  th:first-child, td:first-child { text-align: left; }
+  th { font-weight: 700; }
+  th[colspan] { text-align: center; }
+  caption {
+    text-align: left;
+    font-family: "Atkinson Hyperlegible", sans-serif;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .c90 { background: #c5ddcf; }
+  .c80 { background: #dcecdf; }
+  .c70 { background: #f3ead0; }
+  .c60 { background: #f6dcc4; }
+  .c50 { background: #f3cfc6; }
+  .arch {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin: 1rem 0;
+  }
+  .arch div {
+    border-top: 3px solid var(--cnn);
+    padding-top: 8px;
+  }
+  .arch div.tf-card { border-top-color: var(--tf); }
+  .arch strong { display: block; margin-bottom: 4px; }
+  .arch p { font-family: "Source Serif 4", Georgia, serif; font-size: 1rem; }
+  .status { font-size: 0.95rem; }
+  .status td:last-child { font-weight: 700; }
+  @media (max-width: 720px) {
+    .sheet { margin: 0; padding: 24px 18px 40px; }
+    .pair, .arch { grid-template-columns: 1fr; }
+    h1 { font-size: 1.7rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { scroll-behavior: auto; }
+  }
+</style>
+</head>
+<body>
+<main class="sheet">
+  <h1>Twelve-lead ECGs, five labels, three ways to drop a lead</h1>
+  <p class="byline">Artur Lima and Pedro Nogueira. PTB-XL v1.0.3, 100 Hz. 27 September 2026.</p>
+
+  <p>This is the course analysis: classify five diagnostic superclasses from a 10-second ECG, then score the same models when fixed sets of leads are removed. Both models were trained only on complete 12-lead records. The missing leads are applied later, at test time, by setting those channels to zero.</p>
+  <p>The comparison itself is done. A final writeup that puts these figures in a course document is not, and the code that produced them is still uncommitted on the branch <span class="nums">al/m5-cnn</span>.</p>
+
+  <h2>Fold 10, macro-AUROC</h2>
+  <p>21,799 records. Folds 1–8 train (17,418), fold 9 selects the checkpoint (2,183), fold 10 is scored once (2,198). A constant score equal to the training class rate has macro-AUROC 0.5, drawn as the red line. Macro-AUPRC for that same baseline is 0.254.</p>
+
+  <figure>
+    <div class="plot" role="img" aria-label="Grouped bar chart of fold 10 macro-AUROC. CNN: 0.920 clean, 0.875 with V1 to V3 off, 0.721 with only I and II. Transformer: 0.895, 0.837, 0.641. Chance is 0.5.">
+      <div class="chance"></div>
+      <div class="groups">
+        <div class="group">
+          <div class="bar cnn" style="height:92.0%"><span class="bar-val">0.920</span></div>
+          <div class="bar tf" style="height:89.5%"><span class="bar-val">0.895</span></div>
+        </div>
+        <div class="group">
+          <div class="bar cnn" style="height:87.5%"><span class="bar-val">0.875</span></div>
+          <div class="bar tf" style="height:83.7%"><span class="bar-val">0.837</span></div>
+        </div>
+        <div class="group">
+          <div class="bar cnn" style="height:72.1%"><span class="bar-val">0.721</span></div>
+          <div class="bar tf" style="height:64.1%"><span class="bar-val">0.641</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="xlabels">
+      <span>All 12 leads</span>
+      <span>V1–V3 off</span>
+      <span>I and II only</span>
+    </div>
+    <div class="legend">
+      <span><i class="swatch" style="background:var(--cnn)"></i>CNN, 75,237 parameters</span>
+      <span><i class="swatch" style="background:var(--tf)"></i>Transformer, 81,477 parameters</span>
+      <span><i class="swatch" style="background:transparent;border-top:2px dashed var(--chance);height:0;vertical-align:middle"></i>Chance, 0.5</span>
+    </div>
+    <figcaption>Macro-AUROC on the official test fold. The rows are separate results. They are not averaged into one robustness score.</figcaption>
+  </figure>
+
+  <p>Both models clear the chance line by a wide margin when all twelve leads are present. Taking away V1, V2, and V3 costs about 0.05. Keeping only leads I and II costs about 0.20 for the CNN and about 0.25 for the Transformer. A published 1D ResNet on this same superclass task sits near 0.93, with millions of parameters. The clean CNN number, 0.920, is in that neighborhood because five coarse labels at 100 Hz are a reachable task for a small network.</p>
+
+  <h2>Per class</h2>
+  <p>AUROC asks whether a true case is ranked above a non-case. 0.5 is chance for every class. AUPRC asks whether the high scores are actually the rare cases. Its useless floor is the class rate, not 0.5. On the test fold those rates are about NORM 0.44, MI 0.25, STTC 0.24, CD 0.23, HYP 0.12. HYP can show an AUROC near 0.89 and still be the fragile class once precision and recall are the measure.</p>
+
+  <table>
+    <caption>AUROC by superclass</caption>
+    <thead>
+      <tr><th></th><th colspan="3">CNN</th><th colspan="3">Transformer</th></tr>
+      <tr><th>Class</th><th>All 12</th><th>V1–V3 off</th><th>I+II</th><th>All 12</th><th>V1–V3 off</th><th>I+II</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>NORM</td><td class="c90">0.944</td><td class="c90">0.911</td><td class="c70">0.765</td><td class="c90">0.925</td><td class="c80">0.876</td><td class="c60">0.683</td></tr>
+      <tr><td>MI</td><td class="c90">0.921</td><td class="c80">0.836</td><td class="c50">0.571</td><td class="c80">0.883</td><td class="c80">0.813</td><td class="c60">0.664</td></tr>
+      <tr><td>STTC</td><td class="c90">0.929</td><td class="c90">0.915</td><td class="c80">0.806</td><td class="c90">0.918</td><td class="c80">0.884</td><td class="c50">0.553</td></tr>
+      <tr><td>CD</td><td class="c90">0.913</td><td class="c80">0.840</td><td class="c70">0.797</td><td class="c80">0.858</td><td class="c70">0.769</td><td class="c60">0.650</td></tr>
+      <tr><td>HYP</td><td class="c80">0.891</td><td class="c80">0.874</td><td class="c60">0.665</td><td class="c80">0.892</td><td class="c80">0.844</td><td class="c60">0.655</td></tr>
+    </tbody>
+  </table>
+
+  <table>
+    <caption>AUPRC by superclass</caption>
+    <thead>
+      <tr><th></th><th colspan="3">CNN</th><th colspan="3">Transformer</th></tr>
+      <tr><th>Class</th><th>All 12</th><th>V1–V3 off</th><th>I+II</th><th>All 12</th><th>V1–V3 off</th><th>I+II</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>NORM</td><td class="c90">0.923</td><td class="c80">0.872</td><td class="c60">0.625</td><td class="c80">0.897</td><td class="c80">0.827</td><td class="c50">0.594</td></tr>
+      <tr><td>MI</td><td class="c80">0.821</td><td class="c60">0.678</td><td class="c50">0.334</td><td class="c70">0.757</td><td class="c60">0.626</td><td class="c50">0.437</td></tr>
+      <tr><td>STTC</td><td class="c80">0.810</td><td class="c70">0.785</td><td class="c50">0.572</td><td class="c70">0.777</td><td class="c60">0.698</td><td class="c50">0.276</td></tr>
+      <tr><td>CD</td><td class="c80">0.811</td><td class="c60">0.679</td><td class="c60">0.605</td><td class="c70">0.747</td><td class="c50">0.537</td><td class="c50">0.377</td></tr>
+      <tr><td>HYP</td><td class="c60">0.652</td><td class="c60">0.601</td><td class="c50">0.204</td><td class="c60">0.635</td><td class="c50">0.520</td><td class="c50">0.205</td></tr>
+    </tbody>
+  </table>
+  <p>Color follows the number, from green when the score is high toward red when it is near chance. For AUPRC, red means the score is near the class rate. MI AUPRC of 0.334 on I and II only, against a 0.25 base rate, is a weak result even though the cell is not zero.</p>
+  <p>Removing the three precordial leads hits MI and conduction disturbance and leaves NORM, STTC, and HYP nearly where they were. Restricting the ECG to I and II hits every class. For the CNN, MI ranking almost disappears (AUROC 0.571). For the Transformer, STTC is the class that falls apart (AUROC 0.553, AUPRC 0.276). The CNN is ahead on every macro. It is not ahead on every cell: under I and II only, Transformer MI AUROC is 0.664 and CNN MI AUROC is 0.571.</p>
+  <p>These gaps are one training seed, with no bootstrap interval. A clean-lead difference of 0.024 macro-AUROC is a single run.</p>
+
+  <h2>Training</h2>
+  <p>Both models use unweighted binary cross-entropy with logits, Adam at learning rate 0.001, batch size 128, and a fixed seed. The checkpoint is the epoch with the highest fold-9 macro-AUROC. Fold 10 is not used to pick it. The CNN ran the full 25 epochs and kept epoch 23, where fold-9 macro-AUROC was 0.926. The Transformer stopped at epoch 17 and kept epoch 12, where fold-9 macro-AUROC was 0.907.</p>
+  <div class="pair">
+    <figure>
+      <img src="../figures/m5_curves.png" alt="CNN training curves. Loss falls from about 0.45 to 0.22 over 25 epochs. Fold 9 macro-AUROC rises from about 0.86 to about 0.926.">
+      <figcaption><strong>CNN.</strong> Loss keeps falling after the validation score has flattened. The saved weights are epoch 23, not the last epoch.</figcaption>
+    </figure>
+    <figure>
+      <img src="../figures/m6_curves.png" alt="Transformer training curves. Loss falls over 17 epochs. Fold 9 macro-AUROC peaks near epoch 12 and then declines.">
+      <figcaption><strong>Transformer.</strong> Validation score peaks at epoch 12 and then slides while training loss keeps dropping. Early stopping kept the peak.</figcaption>
+    </figure>
+  </div>
+
+  <h2>One ECG</h2>
+  <p>The demo record is fold-10 <span class="nums">ecg_id</span> 514. The rule that picked it was deliberate: the first test record labeled only as MI whose clean MI probability is at least 0.8. The label is MI and nothing else. The clean probabilities still put substantial mass on conduction disturbance (0.69) and hypertrophy (0.43).</p>
+  <figure>
+    <img src="../figures/m8_demo.png" alt="Bar chart for ECG 514. MI probability is about 0.82 with all leads, 0.79 with V1 to V3 off, and 0.99 with only I and II. Hypertrophy falls to about zero on I and II only.">
+    <figcaption>Sigmoid probabilities for one record, not AUROC. On this trace, MI probability rises when only I and II remain, and hypertrophy collapses. The fold-10 table says the opposite about MI on average. One ECG is an illustration, not the result.</figcaption>
+  </figure>
+
+  <h2>What the recordings look like</h2>
+  <p>Before any model, 100 records at 100 Hz were checked against the official folds. Patient IDs do not cross train, validation, and test. The grid is lead II for that audit set, with the superclass labels on each panel. Some traces carry more than one label.</p>
+  <figure>
+    <img src="../figures/m2_lead2_grid.png" alt="Ten by ten grid of lead II traces from 100 PTB-XL records, each titled with an ECG id and superclass labels.">
+    <figcaption>Lead II from the 100-record audit. The full corpus used for training is 21,799 records, packed and scaled with the training-fold mean and standard deviation only.</figcaption>
+  </figure>
+
+  <h2>How small the models are</h2>
+  <div class="arch">
+    <div>
+      <strong>CNN</strong>
+      <p>Three 1D convolutions, kernel size 7, widths 32, 64, and 128, each followed by a ReLU. Two pooling stages shrink the 1,000 samples, then a global average and a linear layer produce five logits. No residual blocks, no batch norm. 75,237 parameters.</p>
+    </div>
+    <div class="tf-card">
+      <strong>Transformer</strong>
+      <p>The 10 seconds are cut into 125 patches of 8 samples, which is 80 ms at 100 Hz. Each patch mixes all 12 leads into one token. Two encoder layers, width 64, four heads, then a mean over time and a linear layer. No lead embeddings, no pretraining, no reconstruction head. 81,477 parameters.</p>
+    </div>
+  </div>
+  <p>Calling the second model an ECG Transformer overstates it. It is a small supervised patch encoder. It uses the same 100 Hz packed signals as the CNN. The 500 Hz files were never unpacked. Age, sex, and patient id are not inputs.</p>
+  <p>A zeroed lead is a flat line at the training mean, because the signals were already z-scored. The models never saw a missing lead during training, and the stored lead mask is all ones. The table is what a clean-trained network does when some channels become that flat line. Leads III, aVR, aVL, and aVF are linear functions of I and II in the original millivolt recording. After per-lead scaling, that algebra is not what the network sees, so a mild I+II result would not have been evidence of Einthoven reconstruction. The I+II result here is not mild.</p>
+
+  <h2>Where the work stands</h2>
+  <table class="status">
+    <caption>Course track</caption>
+    <thead><tr><th>Piece</th><th>State</th></tr></thead>
+    <tbody>
+      <tr><td>Packed corpus, official split, train-only scaling</td><td>Done</td></tr>
+      <tr><td>Chance baseline, macro-AUROC 0.5</td><td>Done</td></tr>
+      <tr><td>CNN and Transformer, fold-9 selection, fold-10 score</td><td>Done</td></tr>
+      <tr><td>Three-condition table for both models</td><td>Done</td></tr>
+      <tr><td>Single-ECG demo</td><td>Done</td></tr>
+      <tr><td>Tests</td><td>37 passing</td></tr>
+      <tr><td>Course writeup that uses these figures</td><td>Not written</td></tr>
+      <tr><td>This work committed</td><td>Not yet</td></tr>
+    </tbody>
+  </table>
+  <p>The paper version of the project was left shut on purpose. It would need a published-scale ResNet on this split, a second Transformer trained with the same lead dropout and no reconstruction head, masked-precordial pretraining on extra unlabeled ECGs, bootstrap intervals, and an external dataset. None of that was run. These models do not show that pretraining improves robustness, because there was no pretraining.</p>
+  <p>Re-running the CNN scoring script overwrites <span class="nums">figures/missing_lead_table.json</span> and drops the Transformer block. The numbers above match the combined file as it stands now.</p>
+</main>
+</body>
+</html>
