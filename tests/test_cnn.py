@@ -7,7 +7,7 @@ import pytest
 import torch
 from torch import nn
 
-from ecg_transformer.cnn import CNN, apply_condition
+from ecg_transformer.cnn import CNN, apply_condition, with_model_block
 from ecg_transformer.ptbxl import SUPERCLASSES
 
 METRICS_JSON = Path("figures/m5_metrics.json")
@@ -88,9 +88,23 @@ def test_conditions_zero_named_leads_and_leave_the_input_and_packed_files():
 
 
 def _model_block(table: dict, name: str) -> dict:
-    if "models" in table:
-        return next(block for block in table["models"] if block["model"] == name)
-    return table
+    return next(block for block in table["models"] if block["model"] == name)
+
+
+def test_rescoring_one_model_replaces_its_block_and_keeps_the_others():
+    table = {"models": [{"model": "cnn", "rows": ["old"]}, {"model": "transformer", "rows": ["tf"]}]}
+    updated = with_model_block(table, {"model": "cnn", "rows": ["new"]})
+    assert updated == {
+        "models": [{"model": "cnn", "rows": ["new"]}, {"model": "transformer", "rows": ["tf"]}]
+    }
+
+
+def test_scoring_a_new_model_appends_its_block():
+    table = {"models": [{"model": "cnn", "rows": ["cnn"]}]}
+    updated = with_model_block(table, {"model": "transformer", "rows": ["tf"]})
+    assert updated == {
+        "models": [{"model": "cnn", "rows": ["cnn"]}, {"model": "transformer", "rows": ["tf"]}]
+    }
 
 
 def test_missing_lead_table_has_three_rows_and_matches_the_clean_record():

@@ -1,0 +1,83 @@
+{
+  "clean": {
+    "NORM": {
+      "mean_on_positives": 0.7436782121658325,
+      "mean_on_negatives": 0.1374586522579193,
+      "negatives_above_half": 0.10607287449392712
+    },
+    "MI": {
+      "mean_on_positives": 0.5858146548271179,
+      "mean_on_negatives": 0.10206831991672516,
+      "negatives_above_half": 0.04733009708737864
+    },
+    "STTC": {
+      "mean_on_positives": 0.6843956708908081,
+      "mean_on_negatives": 0.13319534063339233,
+      "negatives_above_half": 0.08228980322003578
+    },
+    "CD": {
+      "mean_on_positives": 0.7720385193824768,
+      "mean_on_negatives": 0.2063974142074585,
+      "negatives_above_half": 0.12397179788484136
+    },
+    "HYP": {
+      "mean_on_positives": 0.5258491039276123,
+      "mean_on_negatives": 0.08728016167879105,
+      "negatives_above_half": 0.03512396694214876
+    }
+  },
+  "precordial_v1_v3": {
+    "NORM": {
+      "mean_on_positives": 0.3555275797843933,
+      "mean_on_negatives": 0.06193646788597107,
+      "negatives_above_half": 0.016194331983805668
+    },
+    "MI": {
+      "mean_on_positives": 0.69992995262146,
+      "mean_on_negatives": 0.3619496524333954,
+      "negatives_above_half": 0.2657766990291262
+    },
+    "STTC": {
+      "mean_on_positives": 0.5679143071174622,
+      "mean_on_negatives": 0.11945236474275589,
+      "negatives_above_half": 0.05247465712581992
+    },
+    "CD": {
+      "mean_on_positives": 0.8089405298233032,
+      "mean_on_negatives": 0.4976896345615387,
+      "negatives_above_half": 0.49529964747356053
+    },
+    "HYP": {
+      "mean_on_positives": 0.2890201508998871,
+      "mean_on_negatives": 0.03688564896583557,
+      "negatives_above_half": 0.003615702479338843
+    }
+  },
+  "i_ii_only": {
+    "NORM": {
+      "mean_on_positives": 0.005840953905135393,
+      "mean_on_negatives": 0.0035259597934782505,
+      "negatives_above_half": 0.0
+    },
+    "MI": {
+      "mean_on_positives": 0.7253386378288269,
+      "mean_on_negatives": 0.6928025484085083,
+      "negatives_above_half": 0.9235436893203883
+    },
+    "STTC": {
+      "mean_on_positives": 0.5688754320144653,
+      "mean_on_negatives": 0.4515942931175232,
+      "negatives_above_half": 0.3035181872391175
+    },
+    "CD": {
+      "mean_on_positives": 0.4969455897808075,
+      "mean_on_negatives": 0.28170639276504517,
+      "negatives_above_half": 0.11692126909518213
+    },
+    "HYP": {
+      "mean_on_positives": 0.0068726921454072,
+      "mean_on_negatives": 0.0030269145499914885,
+      "negatives_above_half": 0.0
+    }
+  }
+}
