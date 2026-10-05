@@ -101,6 +101,15 @@ def score_condition(
     return record
 
 
+def with_model_block(table: dict, block: dict) -> dict:
+    names = [old["model"] for old in table["models"]]
+    if block["model"] not in names:
+        return {"models": [*table["models"], block]}
+    return {
+        "models": [block if old["model"] == block["model"] else old for old in table["models"]]
+    }
+
+
 def fit_cnn(
     train_x: torch.Tensor,
     train_y: torch.Tensor,

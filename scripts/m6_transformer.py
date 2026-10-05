@@ -4,7 +4,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import torch
 
-from ecg_transformer.cnn import CONDITIONS, fit_cnn, load_split, score_condition
+from ecg_transformer.cnn import CONDITIONS, fit_cnn, load_split, score_condition, with_model_block
 from ecg_transformer.smoke import pick_device
 from ecg_transformer.transformer import (
     DIM_FEEDFORWARD,
@@ -104,19 +104,13 @@ def main() -> None:
 
 
 def _add_to_table(rows: list[dict]) -> None:
-    old = json.loads(TABLE.read_text())
-    if "models" in old:
-        models = [block for block in old["models"] if block["model"] != "transformer"]
-    else:
-        models = [{"model": old["model"], "checkpoint": old["checkpoint"], "rows": old["rows"]}]
-    models.append(
-        {
-            "model": "transformer",
-            "checkpoint": str(CHECKPOINT.relative_to(ROOT)),
-            "rows": rows,
-        }
-    )
-    TABLE.write_text(json.dumps({"models": models}, indent=2) + "\n")
+    old = json.loads(TABLE.read_text()) if TABLE.exists() else {"models": []}
+    block = {
+        "model": "transformer",
+        "checkpoint": str(CHECKPOINT.relative_to(ROOT)),
+        "rows": rows,
+    }
+    TABLE.write_text(json.dumps(with_model_block(old, block), indent=2) + "\n")
 
 
 def _plot(history: list[dict], path: Path) -> None:

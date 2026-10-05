@@ -304,7 +304,7 @@
     </div>
   </div>
   <p>Calling the second model an ECG Transformer overstates it. It is a small supervised patch encoder. It uses the same 100 Hz packed signals as the CNN. The 500 Hz files were never unpacked. Age, sex, and patient id are not inputs.</p>
-  <p>A zeroed lead is a flat line at the training mean, because the signals were already z-scored. The models never saw a missing lead during training, and the stored lead mask is all ones. The table is what a clean-trained network does when some channels become that flat line. Leads III, aVR, aVL, and aVF are linear functions of I and II in the original millivolt recording. After per-lead scaling, that algebra is not what the network sees, so a mild I+II result would not have been evidence of Einthoven reconstruction. The I+II result here is not mild.</p>
+  <p>A zeroed lead is a flat line at the training mean, because the signals were already z-scored. The models never saw a missing lead during training, and the stored lead mask is all ones. The table is what a clean-trained network does when some channels become that flat line. Leads III, aVR, aVL, and aVF are linear functions of I and II, and per-lead scaling keeps that relation affine. The information in those four leads is still present in the I+II row. The network was never trained to derive them, though, and reads them from channels that are now flat. The I+II row also drops all six chest leads.</p>
 
   <h2>Where the work stands</h2>
   <table class="status">
@@ -316,13 +316,11 @@
       <tr><td>CNN and Transformer, fold-9 selection, fold-10 score</td><td>Done</td></tr>
       <tr><td>Three-condition table for both models</td><td>Done</td></tr>
       <tr><td>Single-ECG demo</td><td>Done</td></tr>
-      <tr><td>Tests</td><td>37 passing</td></tr>
+      <tr><td>Tests</td><td>39 passing</td></tr>
       <tr><td>Course writeup that uses these figures</td><td>Not written</td></tr>
-      <tr><td>This work committed</td><td>Not yet</td></tr>
     </tbody>
   </table>
   <p>The paper version of the project was left shut on purpose. It would need a published-scale ResNet on this split, a second Transformer trained with the same lead dropout and no reconstruction head, masked-precordial pretraining on extra unlabeled ECGs, bootstrap intervals, and an external dataset. None of that was run. These models do not show that pretraining improves robustness, because there was no pretraining.</p>
-  <p>Re-running the CNN scoring script overwrites <span class="nums">figures/missing_lead_table.json</span> and drops the Transformer block. The numbers above match the combined file as it stands now.</p>
 </main>
 </body>
 </html>
